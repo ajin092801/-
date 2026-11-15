@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>함께타요 · 차량 화면</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:#2b2f36;color:#fff;display:flex;gap:20px;padding:20px;align-items:flex-start}
+#screen{width:1280px;height:720px;background:#111418;border-radius:20px;position:relative;overflow:hidden;flex:none}
+.view{position:absolute;inset:0;padding:40px 54px;display:none}
+.view.on{display:block}
+.crumb{color:#8e97a3;font-size:18px}
+h1{font-size:40px;font-weight:700;margin-top:8px}
+.tag{position:absolute;right:54px;top:56px;color:#9aa3ad;font-size:18px}
+.chip{background:#252b34;border-radius:999px;padding:8px 18px;font-size:18px}
+.card{background:#1d2229;border-radius:18px}
+.btn{border:0;border-radius:16px;font:inherit;font-weight:700;cursor:pointer;color:#fff}
+.primary{background:#3d7bff}
+.ghost{background:#1d2229}
+.muted{color:#8e97a3}
+.row{display:flex;gap:22px}
+/* seats */
+.carbody{width:280px;height:305px;border:2px solid #39414c;border-radius:44px;position:relative;margin:0 auto}
+.carbody .wind{position:absolute;left:42px;right:42px;top:16px;height:28px;border-radius:14px;background:#2c333d}
+.seat{position:absolute;width:105px;height:100px;border-radius:14px;background:#2c3440;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;font-weight:700;gap:2px}
+.seat small{font-size:13px;font-weight:400;color:#9aa3ad}
+.seat.empty{background:transparent;border:2px dashed #3d4652;color:#6d7783;font-weight:400}
+.seat.alert{background:#ff8a3d;color:#111}.seat.alert small{color:#3a1d06}
+.seat.gone{opacity:.35}
+.FL{left:26px;top:66px}.FR{right:26px;top:66px}.RL{left:26px;top:186px}.RR{right:26px;top:186px}
+/* console */
+#console{width:300px;background:#f3f4f6;color:#111;border-radius:16px;padding:18px;font-size:14px;flex:none}
+#console h3{font-size:15px;margin:14px 0 8px}
+#console h3:first-child{margin-top:0}
+#console button{background:#fff;border:1px solid #cfd4da;border-radius:8px;padding:8px 10px;font:inherit;cursor:pointer;margin:0 4px 6px 0}
+#console button.on{background:#111;color:#fff;border-color:#111}
+#console .val{font-family:monospace;font-size:13px;color:#333;line-height:1.6}
+#log{font-size:12px;color:#555;line-height:1.6;margin-top:6px}
+</style></head><body>
+<div id="screen">
+ <!-- 01 탑승 준비 -->
+ <div class="view" id="v-lobby">
+  <div class="crumb">함께 가는 길 / 01 탑승 준비</div><h1>함께 타고, 공정하게 나눠요</h1><div class="tag">GRANDEUR · 함께타요</div>
+  <div class="row" style="margin-top:36px;height:395px">
+   <div class="card" style="width:480px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:16px"><canvas id="qr" width="210" height="210"></canvas></div>
+    <div style="font-size:22px;font-weight:700;margin-top:18px">폰으로 찍고 탑승하세요</div>
+    <div class="muted" style="font-size:16px;margin-top:8px">여정 코드 <b id="code" style="color:#fff">----</b> · <span id="joinurl"></span></div>
+   </div>
+   <div class="card" style="flex:1;padding:24px 28px;position:relative">
+    <div style="font-size:20px;font-weight:700">탑승 좌석</div>
+    <div class="chip" style="position:absolute;right:24px;top:18px"><span id="cnt">1</span>명 참여 중</div>
+    <div class="carbody seats" style="margin-top:20px"></div>
+   </div>
+  </div>
+  <div style="position:absolute;left:54px;right:54px;bottom:36px;display:flex;justify-content:space-between;align-items:center">
+   <div class="muted" style="font-size:19px">탑승이 끝나면 여정을 시작하세요.</div>
+   <button class="btn primary" style="width:340px;height:72px;font-size:26px" onclick="api('start')">여정 시작</button>
+  </div>
+ </div>
+ <!-- 02 주행 중 -->
+ <div class="view" id="v-driving" style="padding:42px">
+  <div class="card" style="height:72px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700" id="drivebar">탑승 4명</div>
+  <svg style="margin-top:22px;border-radius:16px" width="1196" height="540" viewBox="0 0 1196 540">
+   <rect width="1196" height="540" fill="#1b2027"/>
+   <path d="M0 400 C 250 360 420 470 640 430 S 1000 470 1196 420 L1196 480 C 1000 520 820 480 640 490 S 250 420 0 460Z" fill="#203048"/>
+   <g stroke="#3a424d" stroke-width="7" fill="none"><path d="M0 120 L1196 160"/><path d="M0 300 L1196 330"/><path d="M180 0 L240 540"/><path d="M520 0 L500 540"/><path d="M860 0 C 830 200 900 380 880 540"/><path d="M1080 0 L1040 540"/></g>
+   <g stroke="#2a313a" stroke-width="3" fill="none"><path d="M0 210 L1196 240"/><path d="M340 0 L370 540"/><path d="M700 0 L690 540"/><path d="M0 60 L1196 90"/></g>
+   <rect x="250" y="170" width="120" height="80" rx="6" fill="#2d4a3a"/><rect x="900" y="190" width="110" height="90" rx="6" fill="#2d4a3a"/>
+   <path d="M598 520 L598 380 L660 360 L700 300 L760 250 L900 120 L960 0" stroke="#3d7bff" stroke-width="9" fill="none" stroke-linejoin="round"/>
+   <path d="M598 470 l-16 34 l16 -8 l16 8z" fill="#5b8fff" stroke="#fff" stroke-width="2"/>
+  </svg>
+ </div>
+ <!-- 정차 중 -->
+ <div class="view" id="v-stopped">
+  <div class="crumb">함께 가는 길 / 정차 중</div><h1 id="stopTitle">잠시 멈췄어요</h1><div class="chip" style="position:absolute;right:54px;top:52px;padding:10px 26px;font-size:20px">정차 중</div>
+  <div class="row" style="margin-top:36px;height:395px">
+   <div class="card" style="width:560px;display:flex;align-items:center;justify-content:center"><div class="carbody seats"></div></div>
+   <div class="card" style="flex:1;padding:36px" id="stopInfo"></div>
+  </div>
+  <div style="position:absolute;left:54px;right:54px;bottom:36px;display:flex;justify-content:space-between;align-items:center">
+   <div class="muted" style="font-size:19px" id="stopFoot">확인되면 탑승 구간이 자동으로 기록돼요.</div>
+   <button class="btn primary" style="width:340px;height:72px;font-size:26px" onclick="api('finish')">도착 · 정산하기</button>
+  </div>
+ </div>
+ <!-- 04 정산 -->
+ <div class="view" id="v-finished">
+  <div class="crumb">함께 가는 길 / 04 도착 후 정산</div><h1>탄 만큼 나누면, 정산 끝</h1><div class="tag" style="font-size:22px;color:#fff;font-weight:700" id="totalTag"></div>
+  <div class="row" id="cards" style="margin-top:34px"></div>
+  <div class="muted" style="font-size:18px;margin-top:22px" id="basis"></div>
+  <div style="position:absolute;left:54px;right:54px;bottom:36px;display:flex;justify-content:space-between;gap:20px">
+   <button class="btn ghost" style="width:300px;height:72px;font-size:22px" onclick="addToll()">톨비·주차비 추가</button>
+   <button class="btn ghost" style="width:300px;height:72px;font-size:22px;display:none" id="v2lBtn" onclick="show('v2l')">캠핑 모드 (V2L)</button>
+   <button class="btn primary" style="width:420px;height:72px;font-size:26px" id="sendBtn" onclick="sent()">정산 보내기</button>
+  </div>
+ </div>
+ <!-- 07 V2L -->
+ <div class="view" id="v-v2l">
+  <div class="crumb">함께 가는 길 / 07 V2L 플래너</div><h1>도착 후에도, 여유롭게</h1><div class="tag">V2L · 귀가선 <span id="reserveTxt">30</span>% 보호</div>
+  <div class="row" style="margin-top:36px;height:395px">
+   <div class="card" style="width:640px;padding:28px 30px">
+    <div style="display:flex;justify-content:space-between;font-size:21px;font-weight:700"><span>사용할 가전</span><span class="muted" style="font-weight:400;font-size:17px">소비 전력 · 탭해서 선택</span></div>
+    <div id="apps" style="margin-top:14px"></div>
+   </div>
+   <div class="card" style="flex:1;padding:30px 34px">
+    <div style="font-size:21px;font-weight:700">남은 사용 시간</div>
+    <div style="font-size:54px;font-weight:700;margin-top:18px" id="v2lTime">-</div>
+    <div style="height:10px;background:#2c333d;border-radius:5px;margin-top:20px"><div id="v2lBar" style="height:10px;background:#3d7bff;border-radius:5px;width:0"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:20px;margin-top:24px"><span class="muted">현재 사용량</span><b id="v2lLoad">0W</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:20px;margin-top:12px"><span class="muted">배터리 / 귀가선</span><b id="v2lSoc">-</b></div>
+    <div class="muted" style="font-size:16px;margin-top:22px">귀가에 필요한 배터리는 남겨 두고 계산해요.</div>
+   </div>
+  </div>
+  <div style="position:absolute;left:54px;bottom:44px" class="muted"><span style="font-size:18px">사용 시간은 배터리 잔량과 실제 소비 전력에 따라 달라져요.</span></div>
+  <button class="btn ghost" style="position:absolute;right:54px;bottom:36px;width:260px;height:64px;font-size:21px" onclick="show('finished')">정산으로 돌아가기</button>
+ </div>
+</div>
+
+<!-- 가상 차량 콘솔: 실제 차에서는 Pleos Vehicle State SDK가 이 값을 준다 -->
+<div id="console">
+ <h3>가상 차량 콘솔 (Virtual Console 역할)</h3>
+ <button onclick="newTrip('ice')">새 여정 · 내연기관</button><button onclick="newTrip('ev')">새 여정 · 전기차</button>
+ <h3>기어</h3><button id="gP" onclick="setGear('P')">P</button><button id="gD" onclick="setGear('D')">D</button>
+ <h3>주행</h3><button onclick="drive(4)">+4km 주행</button><button onclick="drive(16)">+16km 주행</button>
+ <h3>문 열고 닫기 (정차 중)</h3><button onclick="door('FR')">조수석</button><button onclick="door('RL')">뒷좌석 왼쪽</button><button onclick="door('RR')">뒷좌석 오른쪽</button>
+ <h3>차량 값</h3><div class="val" id="vals"></div>
+ <h3>이벤트</h3><div id="log"></div>
+</div>
+
+<script>
+let S=null, CODE=null, V={gear:'P',odometer_km:12034.0,fuel_l:42.0,battery_kwh:48.0,doors:{}}, sentFlag=false;
+const SEAT={FL:'운전',FR:'조수석',RL:'뒷좌석 왼쪽',RR:'뒷좌석 오른쪽'};
+const won=n=>n.toLocaleString('ko-KR')+'원';
+async function post(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return r.json()}
+async function api(a,b){if(!CODE)return;S=await post(`/api/trips/${CODE}/${a}`,b);render()}
+async function newTrip(pt){sentFlag=false;V={gear:'P',odometer_km:12034.0,fuel_l:42.0,battery_kwh:48.0,doors:{}};S=await post('/api/trips',{driver:'철수',powertrain:pt});CODE=S.code;await pushV();render()}
+async function pushV(){await api('vehicle',V)}
+function setGear(g){V.gear=g;pushV()}
+function drive(km){if(V.gear!=='D'){alert('기어를 D로 바꿔 주세요');return}
+ V.odometer_km=+(V.odometer_km+km).toFixed(1);
+ if(S&&S.powertrain==='ev')V.battery_kwh=+(V.battery_kwh-km*0.16).toFixed(2); else V.fuel_l=+(V.fuel_l-km/16).toFixed(3);
+ pushV()}
+async function door(seat){if(V.gear!=='P'){alert('정차(P) 중에만 문을 열 수 있어요');return}
+ V.doors={...V.doors,[seat]:true};await pushV();await new Promise(r=>setTimeout(r,600));V.doors={...V.doors,[seat]:false};await pushV()}
+function addToll(){const a=prompt('톨비·주차비 금액(원)','2400');if(a)api('extra',{amount:+a,label:'톨비'})}
+function sent(){sentFlag=true;render()}
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id))}
+function seatsHTML(){const by={};S.people.forEach(p=>{if(p.active||p.pending_alight)by[p.seat]=p});
+ return '<div class="wind"></div>'+['FL','FR','RL','RR'].map(k=>{const p=by[k];if(!p)return `<div class="seat empty ${k}">빈 자리</div>`;
+  return `<div class="seat ${k} ${p.pending_alight?'alert':''}">${p.name}<small>${p.pending_alight?'하차 확인 중':(p.is_driver?'운전':SEAT[k])}</small></div>`}).join('')}
+let curView='';
+function render(){if(!S)return;
+ document.getElementById('code').textContent=S.code;
+ document.getElementById('joinurl').textContent=location.host+'/p/'+S.code;
+ document.getElementById('cnt').textContent=S.people.filter(p=>p.active).length;
+ document.querySelectorAll('.seats').forEach(e=>e.innerHTML=seatsHTML());
+ // 주행 중 한 줄
+ const remain=S.status==='driving'?'':'';
+ document.getElementById('drivebar').textContent=`탑승 ${S.active_count}명 · 지금까지 1인당 예상 금액: ${won(S.per_head_now)}`;
+ // 정차 중
+ const pend=S.people.find(p=>p.pending_alight);
+ document.getElementById('stopTitle').textContent=pend?'하차를 감지했어요':'잠시 멈췄어요';
+ document.getElementById('stopInfo').innerHTML=pend?
+  `<span class="chip" style="background:#3a2414;color:#ff9a55">하차 감지</span><div style="font-size:32px;font-weight:700;margin-top:26px;line-height:1.4">${pend.seat_name} 문 열림 ·<br>${pend.name} 님 하차 확인 중</div><div class="muted" style="font-size:20px;margin-top:22px;line-height:1.6">${pend.name} 님의 휴대폰으로<br>하차 확인 알림을 보냈어요.</div><div style="font-size:18px;margin-top:26px;color:#cfd6dd">● 응답을 기다리고 있어요</div>`:
+  `<div style="font-size:26px;font-weight:700">지금까지의 기록</div>`+S.people.map(p=>`<div style="display:flex;justify-content:space-between;font-size:20px;padding:12px 0;border-bottom:1px solid #2a313a"><span>${p.name}${p.active?'':' (하차)'}</span><span class="muted">${p.distance_km}km · ${won(p.amount)}</span></div>`).join('')+`<div class="muted" style="font-size:16px;margin-top:14px">${S.events.slice(-1)[0]||''}</div>`;
+ // 정산
+ document.getElementById('totalTag').textContent='총 정산 금액  '+won(S.people.reduce((a,p)=>a+p.amount,0));
+ document.getElementById('cards').innerHTML=S.people.map(p=>`<div class="card" style="flex:1;padding:24px 26px"><div class="muted" style="font-size:17px">${p.is_driver?'본인 부담':'동승자'}</div><div style="font-size:30px;font-weight:700;margin-top:10px">${p.name}</div><div style="border-top:1px solid #2f3640;margin:20px 0 16px"></div><div style="display:flex;justify-content:space-between;font-size:19px"><span class="muted">탄 거리</span><span>${p.distance_km}km</span></div><div class="muted" style="font-size:17px;margin-top:18px">부담 금액</div><div style="font-size:36px;font-weight:700;margin-top:4px">${won(p.amount)}</div></div>`).join('');
+ const segTxt=S.segments.map(s=>`구간${s.no}(${s.occupants.length}명) ${s.distance}km·${s.energy}${S.unit}·${won(s.cost)}`).join('  ');
+ document.getElementById('basis').textContent=(sentFlag?`정산을 보냈어요 · 철수 님이 받을 금액 ${won(S.driver_receives)}  |  `:'')+'탑승 구간과 사용 '+(S.powertrain==='ev'?'전기':'연료')+'를 기준으로 나눴어요.  '+segTxt+(S.extras.length?'  · 추가 비용 '+won(S.extras.reduce((a,e)=>a+e.amount,0)):'');
+ document.getElementById('sendBtn').textContent=sentFlag?'보냈어요 ✓':'정산 보내기';
+ document.getElementById('v2lBtn').style.display=S.powertrain==='ev'?'block':'none';
+ // 화면 전환 (V2L은 사용자가 연 경우 유지)
+ const want={lobby:'lobby',driving:'driving',stopped:'stopped',finished:'finished'}[S.status];
+ const onV2L=document.getElementById('v-v2l').classList.contains('on');
+ if(!(onV2L&&S.status==='finished')&&curView!==want){show(want);curView=want}
+ // 콘솔
+ document.getElementById('gP').classList.toggle('on',V.gear==='P');document.getElementById('gD').classList.toggle('on',V.gear==='D');
+ document.getElementById('vals').innerHTML=`상태 ${S.status}<br>주행거리 ${S.vehicle.odometer_km}km<br>`+(S.powertrain==='ev'?`배터리 ${S.vehicle.battery_kwh}kWh`:`연료 ${S.vehicle.fuel_l}L`);
+ document.getElementById('log').innerHTML=S.events.slice().reverse().join('<br>');
+ renderV2L();
+}
+// V2L 플래너
+const APPS=[['전기매트',80,1],['미니 냉장고',60,1],['캠핑 조명',20,1],['전기포트',1500,0],['미니 히터(약)',800,0]];
+function renderV2L(){if(!S)return;const cap=S.vehicle.battery_capacity_kwh||77.4,kwh=S.vehicle.battery_kwh,reserve=0.30;
+ document.getElementById('apps').innerHTML=APPS.map((a,i)=>`<div onclick="APPS[${i}][2]^=1;renderV2L()" style="cursor:pointer;display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid #2a313a;opacity:${a[2]?1:.4}"><span style="width:40px;height:40px;border-radius:10px;background:${a[2]?'#3d7bff':'#2c333d'};display:flex;align-items:center;justify-content:center;font-size:16px">${a[2]?'✓':String(i+1).padStart(2,'0')}</span><span style="flex:1;font-size:21px">${a[0]}</span><span style="font-size:20px">${a[1]}W</span></div>`).join('');
+ const load=APPS.filter(a=>a[2]).reduce((s,a)=>s+a[1],0),usable=Math.max(0,kwh-cap*reserve),h=load?usable/(load/1000):0;
+ document.getElementById('v2lLoad').textContent=load+'W';
+ document.getElementById('v2lSoc').textContent=`${Math.round(kwh/cap*100)}% / ${reserve*100}%`;
+ document.getElementById('v2lTime').textContent=load?`${Math.floor(h)}시간 ${Math.round((h%1)*60)}분`:'가전을 골라 주세요';
+ document.getElementById('v2lBar').style.width=Math.min(100,kwh/cap*100)+'%'}
+// 장식용 QR 무늬 (실제 앱에서는 여정 URL을 담은 QR 생성)
+(function(){const c=document.getElementById('qr'),x=c.getContext('2d'),n=25,s=210/n;let seed=11;const r=()=>(seed=seed*16807%2147483647)/2147483647;
+ x.fillStyle='#000';for(let i=0;i<n;i++)for(let j=0;j<n;j++){if(!((i<8&&j<8)||(i>n-9&&j<8)||(i<8&&j>n-9))&&r()>.5)x.fillRect(i*s,j*s,s+.5,s+.5)}
+ const f=(a,b)=>{x.fillStyle='#000';x.fillRect(a*s,b*s,7*s,7*s);x.fillStyle='#fff';x.fillRect((a+1)*s,(b+1)*s,5*s,5*s);x.fillStyle='#000';x.fillRect((a+2)*s,(b+2)*s,3*s,3*s)};f(0,0);f(n-7,0);f(0,n-7)})();
+setInterval(async()=>{if(!CODE)return;S=await (await fetch('/api/trips/'+CODE)).json();render()},700);
+newTrip(new URLSearchParams(location.search).get('pt')||'ice');
+</script></body></html>

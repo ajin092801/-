@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>함께타요</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:#fff;color:#111;max-width:430px;margin:0 auto;min-height:100vh;position:relative;padding:0 24px 140px}
+.top{display:flex;justify-content:space-between;align-items:center;height:64px;font-weight:700;font-size:19px}
+.top span{font-weight:400;font-size:15px;color:#333}
+.label{color:#3d7bff;font-weight:700;font-size:14px;margin-top:22px}
+h2{font-size:25px;margin-top:10px;line-height:1.35}
+.sub{color:#555;font-size:15px;margin-top:10px;line-height:1.6}
+.box{background:#f4f5f8;border-radius:16px;padding:20px 22px;margin-top:28px}
+.box .r{display:flex;justify-content:space-between;font-size:15px;padding:7px 0}
+.box .r span:first-child{color:#666}
+.bottom{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;width:calc(min(430px,100vw) - 48px);display:flex;flex-direction:column;gap:10px}
+button{border:0;border-radius:14px;height:54px;font:inherit;font-size:17px;font-weight:700;cursor:pointer}
+.primary{background:#3d7bff;color:#fff}.ghost{background:#f1f2f5;color:#222}
+input{width:100%;height:52px;border:1px solid #d8dce2;border-radius:12px;padding:0 14px;font:inherit;font-size:16px;margin-top:10px}
+.seats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.seats button{height:64px;background:#f4f5f8;color:#222;font-weight:400}
+.seats button.sel{background:#3d7bff;color:#fff;font-weight:700}
+.seats button:disabled{opacity:.35}
+.v{display:none}.v.on{display:block}
+.err{color:#e5484d;font-size:14px;margin-top:10px}
+</style></head><body>
+<div class="top">함께타요<span id="who"></span></div>
+
+<!-- 탑승 등록 -->
+<div class="v" id="v-join">
+ <div class="label">탑승 등록</div><h2>함께 탈 준비가 됐나요?</h2><div class="sub">이름과 앉은 자리를 고르면 탑승이 기록돼요.<br>앱 설치는 필요 없어요.</div>
+ <input id="name" placeholder="이름 (예: 영희)" maxlength="10">
+ <div class="seats" id="seatSel"></div>
+ <div class="err" id="err"></div>
+ <div class="bottom"><button class="primary" onclick="join()">탑승하기</button></div>
+</div>
+
+<!-- 탑승 중 -->
+<div class="v" id="v-ride">
+ <div class="label">탑승 중</div><h2 id="rideTitle">함께 가는 중이에요</h2><div class="sub">탄 만큼만 내도록 차가 기록하고 있어요.</div>
+ <div class="box"><div class="r"><span>내 자리</span><span id="mySeat"></span></div><div class="r"><span>함께 탄 거리</span><span id="myDist"></span></div><div class="r"><span>지금까지 예상 금액</span><b id="myNow"></b></div></div>
+</div>
+
+<!-- 하차 확인 -->
+<div class="v" id="v-alight">
+ <div class="label">하차 확인</div><h2>여기서 내리셨나요?</h2><div class="sub"><span id="alSeat"></span> 문이 열렸어요.<br>지금 내리셨다면 알려주세요.</div>
+ <div class="box"><div style="color:#666;font-size:15px">함께 탄 거리</div><div style="font-size:28px;font-weight:700;margin-top:8px" id="alDist"></div><div style="border-top:1px solid #e2e5ea;margin:16px 0 12px"></div><div style="color:#666;font-size:14px">확인하면 탑승 기록이 마무리돼요.</div></div>
+ <div class="sub" style="font-size:14px;margin-top:22px">아직 타고 계시다면 '아직이요'를 눌러주세요.</div>
+ <div class="bottom"><button class="primary" onclick="alight(true)">네, 내렸어요</button><button class="ghost" onclick="alight(false)">아직이요</button></div>
+</div>
+
+<!-- 하차 후 대기 -->
+<div class="v" id="v-left">
+ <div class="label">하차 완료</div><h2>탑승 기록이 마무리됐어요</h2><div class="sub">일행이 도착하면 최종 금액을 보내드려요.</div>
+ <div class="box"><div class="r"><span>함께 탄 거리</span><span id="lDist"></span></div><div class="r"><span>예상 금액</span><b id="lAmt"></b></div></div>
+</div>
+
+<!-- 정산 결과 -->
+<div class="v" id="v-done">
+ <div class="label">여정 정산</div><h2 id="dTitle"></h2><div class="sub">함께 탄 만큼, 공정하게 나눴어요.</div>
+ <div class="box"><div style="font-weight:700;font-size:16px;margin-bottom:8px">정산 근거</div><div id="basis"></div></div>
+ <div class="sub" style="font-size:14px;margin-top:20px" id="toWho"></div>
+ <div class="bottom"><button class="primary" id="payBtn" onclick="pay()">송금하기</button></div>
+</div>
+
+<script>
+const CODE=location.pathname.split('/').filter(Boolean)[1];
+const SEAT={FR:'조수석',RL:'뒷좌석 왼쪽',RR:'뒷좌석 오른쪽'};
+const KEY='pid_'+CODE+'_'+(new URLSearchParams(location.search).get('slot')||'');
+let PID=sessionStorage.getItem(KEY), S=null, pick=null;
+const won=n=>n.toLocaleString('ko-KR')+'원';
+function show(id){document.querySelectorAll('.v').forEach(v=>v.classList.toggle('on',v.id==='v-'+id))}
+async function join(){const name=document.getElementById('name').value.trim();if(!name||!pick){document.getElementById('err').textContent='이름과 좌석을 골라 주세요';return}
+ const r=await (await fetch(`/api/trips/${CODE}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,seat:pick})})).json();
+ if(r.error){document.getElementById('err').textContent=r.error;return}
+ PID=r.passenger_id;sessionStorage.setItem(KEY,PID);S=r;render()}
+async function alight(yes){S=await (await fetch(`/api/trips/${CODE}/alight`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passenger_id:PID,yes})})).json();render()}
+function pay(){document.getElementById('payBtn').textContent='송금 앱 연동 예정 (프로토타입)'}
+function render(){if(!S)return;
+ const me=S.people.find(p=>p.pid===PID);
+ if(!me){const taken=S.people.filter(p=>p.active).map(p=>p.seat);
+  document.getElementById('seatSel').innerHTML=Object.entries(SEAT).map(([k,v])=>`<button class="${pick===k?'sel':''}" ${taken.includes(k)?'disabled':''} onclick="pick='${k}';render()">${v}</button>`).join('');
+  return show('join')}
+ document.getElementById('who').textContent=me.name+' 님';
+ if(S.status==='finished'){
+  const drv=S.people.find(p=>p.is_driver), seg=S.segments.filter(s=>me.segments.includes(s.no));
+  document.getElementById('dTitle').textContent='내 몫 '+won(me.amount);
+  document.getElementById('basis').innerHTML=`<div class="r"><span>탄 구간</span><span>${me.distance_km}km</span></div><div class="r"><span>사용 ${S.unit==='L'?'연료':'전기'} (내 몫)</span><span>${me.energy}${S.unit}</span></div>`+
+   seg.map(s=>`<div class="r"><span>구간${s.no} · ${s.occupants.length}명</span><span>${won(s.cost)} ÷ ${s.occupants.length}</span></div>`).join('')+
+   `<div class="r" style="border-top:1px solid #e2e5ea;margin-top:6px;padding-top:12px"><span>${S.extras.length?'추가 비용 포함':'추가 비용 없음'}</span><span>${won(me.raw)} → ${won(me.amount)}</span></div>`;
+  document.getElementById('toWho').innerHTML=`수신인 ${drv.name}<br>송금 전 금액을 한 번 더 확인해주세요.`;
+  document.getElementById('payBtn').style.display=me.is_driver?'none':'block';
+  return show('done')}
+ if(me.pending_alight){document.getElementById('alSeat').textContent=me.seat_name;document.getElementById('alDist').textContent=me.distance_km+'km';return show('alight')}
+ if(!me.active){document.getElementById('lDist').textContent=me.distance_km+'km';document.getElementById('lAmt').textContent=won(me.amount);return show('left')}
+ document.getElementById('rideTitle').textContent=S.status==='driving'?'함께 가는 중이에요':(S.status==='lobby'?'곧 출발해요':'잠시 멈췄어요');
+ document.getElementById('mySeat').textContent=me.seat_name;document.getElementById('myDist').textContent=me.distance_km+'km';document.getElementById('myNow').textContent=won(me.amount);
+ show('ride')}
+async function poll(){try{S=await (await fetch('/api/trips/'+CODE)).json();if(S.error){document.body.innerHTML='<p style="padding:40px">여정을 찾을 수 없어요.</p>';return}render()}catch(e){}}
+setInterval(poll,700);poll();
+</script></body></html>

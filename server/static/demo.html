@@ -1,0 +1,15 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>함께타요 시연</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{width:1920px;height:1080px;background:#e9ebef;font-family:'Noto Sans CJK KR',sans-serif;overflow:hidden;position:relative}
+.wrap{position:absolute;overflow:hidden}.wrap iframe{border:0;transform-origin:0 0;background:#fff}
+.lab{position:absolute;font-size:22px;font-weight:700;color:#333}
+#cap{position:absolute;left:0;right:0;bottom:0;height:150px;background:#111418;color:#fff;display:flex;align-items:center;padding:0 60px;gap:28px}
+#cap .n{font-size:30px;font-weight:700;color:#7fa8ff;min-width:90px}#cap .t{font-size:34px;font-weight:700}#cap .s{font-size:22px;color:#aab2bd;margin-top:6px}
+.phone{border-radius:34px;border:8px solid #111;background:#fff}</style></head><body>
+<div class="lab" style="left:40px;top:22px">차량 화면 (Pleos Connect) + 가상 차량 콘솔</div>
+<div class="wrap" style="left:30px;top:60px;width:1181px;height:563px"><iframe id="car" src="/car" style="width:1640px;height:782px;transform:scale(.72)"></iframe></div>
+<div class="lab" style="left:1250px;top:22px">동승자 폰 · 영희</div><div class="lab" style="left:1585px;top:22px">동승자 폰 · 민수</div>
+<div class="wrap phone" style="left:1240px;top:60px;width:328px;height:640px"><iframe id="pa" style="width:390px;height:780px;transform:scale(.8)"></iframe></div>
+<div class="wrap phone" style="left:1576px;top:60px;width:328px;height:640px"><iframe id="pb" style="width:390px;height:780px;transform:scale(.8)"></iframe></div>
+<div style="position:absolute;left:30px;top:640px;width:1181px;font-size:20px;color:#555;line-height:1.7" id="note">실제 차량에서는 기어·주행거리·연료·도어 값을 Pleos Vehicle State SDK에서 받습니다. 이 시연에서는 오른쪽 콘솔이 그 값을 대신 보냅니다.</div>
+<div id="cap"><div class="n" id="capN">01</div><div><div class="t" id="capT">함께타요 시연</div><div class="s" id="capS"></div></div></div>
+<script>function cap(n,t,s){capN.textContent=n;capT.textContent=t;capS.textContent=s||''}</script></body></html>
